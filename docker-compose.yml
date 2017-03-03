@@ -3,11 +3,15 @@ version: '2'
 services:
   elasticsearch:
     build: elasticsearch/
+    volumes:
+      - ./data/elasticsearch:/usr/share/elasticsearch/data
     ports:
       - "9200:9200"
       - "9300:9300"
     environment:
       ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+      node.name: "Master_node"
+      cluster.name: "cluster-01"
       # disable X-Pack
       # see https://www.elastic.co/guide/en/x-pack/current/xpack-settings.html
       #     https://www.elastic.co/guide/en/x-pack/current/installing-xpack.html#xpack-enabling
@@ -15,8 +19,32 @@ services:
       xpack.monitoring.enabled: "false"
       xpack.graph.enabled: "false"
       xpack.watcher.enabled: "false"
+      http.cors.enabled: "true"
+      http.cors.allow-origin: "*"
     networks:
       - docker_elk
+
+
+  es_node:
+    build: elasticsearch/
+    environment:
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+      cluster.name: "cluster-01"
+      discovery.zen.ping.unicast.hosts: "elasticsearch"
+      # disable X-Pack
+      # see https://www.elastic.co/guide/en/x-pack/current/xpack-settings.html
+      #     https://www.elastic.co/guide/en/x-pack/current/installing-xpack.html#xpack-enabling
+      xpack.security.enabled: "false"
+      xpack.monitoring.enabled: "false"
+      xpack.graph.enabled: "false"
+      xpack.watcher.enabled: "false"
+      http.cors.enabled: "true"
+    networks:
+      - docker_elk
+    depends_on:
+      - elasticsearch
+
+
   logstash:
     build: logstash/
     volumes:
@@ -28,6 +56,8 @@ services:
       - docker_elk
     depends_on:
       - elasticsearch
+
+
   kibana:
     build: kibana/
     volumes:
